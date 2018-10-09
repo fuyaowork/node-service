@@ -14,7 +14,7 @@
 
 ## 界面
 
-![Screenshot](http://github.com/fuyaowork/node-service/raw/master/Screenshot/Screenshot.png)
+![Screenshot](https://raw.githubusercontent.com/fuyaowork/node-service/master/Screenshot/Screenshot.png)
 
 ## 功能
 
