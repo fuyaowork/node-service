@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>自动化对比工具</title>
+    <!-- 引入公共样式表 -->
+    <link rel="stylesheet" type="text/css" href="./assets/css/site.css">
+</head>
+<body>
+    <div id="app">
+        <h1 class="m-title">
+            <img class="u-logo" src="./assets/img/tool_icon.png">
+            <span class="u-text">自动化对比小工具</span>
+        </h1>
+        <div class="m-main">
+            <div class="g-top">
+                <div class="m-strings">
+                    <label>Hive查询语句 : </label>
+                    <p>
+                        select
+                        <mark class="mark1"> {{keyName || '键名'}} </mark>
+                        from
+                        <mark class="mark2"> {{tableName1 || '表名1'}} </mark>
+                        <mark class="mark3"> {{condition || '条件(where... 或 limit... 或 其他)'}}</mark>
+                    </p>
+                    <p>
+                        select
+                        <mark class="mark1"> {{keyName || '键名'}} </mark>
+                        from
+                        <mark class="mark2"> {{tableName2 || '表名2'}} </mark>
+                        <mark class="mark3"> {{condition || '条件(where... 或 limit... 或 其他)'}} </mark>
+                    </p>
+                </div>
+                <div class="m-inputs">
+                    <p>
+                        <label for="key">键名 :</label>
+                        <input id="key" type="text" name="KeyName" placeholder="输入键名" v-model="keyName">
+                    </p>
+                    <p>
+                        <label for="table">表名 :</label>
+                        <input id="table" type="text" name="TableName1" placeholder="输入表名1" v-model="tableName1">
+                        <input type="text" name="TableName2" placeholder="输入表名2" v-model="tableName2">
+                    </p>
+                    <p>
+                        <label for="condition">条件 :</label>
+                        <input id="condition" type="text" name="Condition" placeholder="输入查询条件" v-model="condition">
+                    </p>
+                </div>
+                <div class="m-btn">
+                    <div class="u-btn" @click="submit">查询</div>
+                </div>
+            </div>
+            <div class="g-main">
+                <div class="m-label">
+                    <div class="m-left">查询结果 :</div>
+                    <div class="m-right">
+                        <input type="text" name="Search" placeholder="输入键名查找"  v-model="searchKey" @keyup.enter="Search">
+                        <img src="./assets/img/search_icon.png">
+                    </div>
+                </div>
+                <div class="m-table">
+                    <ul class="m-table-hd">
+                        <li>key</li>
+                        <li>value1</li>
+                        <li>value2</li>
+                        <li>差量</li>
+                        <li>差量占比1</li>
+                        <li>差量占比2</li>
+                    </ul>
+                    <ul class="m-table-hr" v-for="(i, index) in resultList" :key="index" v-if="index >= skip && index < skip + limit">
+                        <li>{{i.key}}</li>
+                        <li>{{i.value1}}</li>
+                        <li>{{i.value2}}</li>
+                        <li>{{Math.abs(i.value1-i.value2)}}</li>
+                        <li>{{((Math.abs(i.value1-i.value2)/i.value1)*100).toFixed(2)}}%</li>
+                        <li>{{((Math.abs(i.value1-i.value2)/i.value2)*100).toFixed(2)}}%</li>
+                    </ul>
+                    <div class="m-table-empty" v-if="!resultList.length">无数据</div>
+                </div>
+                <div class="m-pagination">
+                    <span class="u-pagination__total">共 {{total}} 条</span>
+                    <span class="u-pagination__size">
+                        <input type="text" readonly="readonly" autocomplete="off" placeholder="请选择" :value="limit+' 条/页'" @click="selectShow=!selectShow" @blur="inputBlur" ref="selectInput">
+                        <span class="u-icon-arrow"></span>
+                        <div class="u-select-dropdown__wrap" v-show="selectShow">
+                            <ul class="u-select-dropdown__list">
+                                <li class="u-select-dropdown__item" v-for="(i,index) in pageSizes" :key="index" @click.stop.prevent="selectPageSize(i)" @mousedown.stop.prevent="selectMousedown"><span>{{i}} 条/页</span></li>
+                            </ul>
+                            <span class="u-popper__arrow"></span>
+                        </div>
+                    </span>
+                    <button type="button" class="u-btn-prev" @click="changePage(-1)">
+                        <i class="u-icon-arrow-left" :class="{disabled: page==1}"></i>
+                    </button>
+                    <ul class="m-pager">
+                        <li class="number" :class="{active:skip/limit==index}" v-for="(i,index) in Math.ceil(total/limit)" @click="skip=index*limit;page=index+1">{{index+1}}</li>
+                    </ul>
+                    <button type="button" class="u-btn-next" @click="changePage(1)">
+                        <i class="u-icon-arrow-right" :class="{disabled: page==Math.ceil(total/limit)}"></i>
+                    </button>
+                    <span class="u-pagination__jump">
+                        前往
+                        <input type="number" autocomplete="off" min="1" :max="Math.ceil(total/limit)" v-model="page" @blur="paginationInputBlur" @keyup.enter="skip=(page-1)*limit;if(page>Math.ceil(total/limit)){page=Math.ceil(total/limit);skip=(page-1)*limit}">
+                        页
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script type="text/javascript" src="./assets/js/vue.js"></script>
+    <script type="text/javascript" src="./assets/js/axios.min.js"></script>
+    <script type="text/javascript">
+        var vm = new Vue({
+            el: '#app',
+            data: {
+                keyName: null,
+                tableName1: null,
+                tableName2: null,
+                condition: null,
+                searchKey: null,
+                list1: [
+                    {key:'0000',value1:1131,value2:1141},
+                    {key:'0010',value1:2415,value2:2615},
+                    {key:'0020',value1:3465,value2:3265},
+                    {key:'0030',value1:2513,value2:2813},
+                    {key:'0040',value1:4015,value2:4005},
+                    {key:'0041',value1:5518,value2:5500},
+                    {key:'0000',value1:1131,value2:1141},
+                    {key:'0010',value1:2415,value2:2615},
+                    {key:'0020',value1:3465,value2:3265},
+                    {key:'0030',value1:2513,value2:2813},
+                    {key:'0040',value1:4015,value2:4005},
+                    {key:'0041',value1:5518,value2:5500},
+                    {key:'0000',value1:1131,value2:1141},
+                    {key:'0010',value1:2415,value2:2615},
+                    {key:'0020',value1:3465,value2:3265},
+                    {key:'0030',value1:2513,value2:2813},
+                    {key:'0040',value1:4015,value2:4005},
+                    {key:'0041',value1:5518,value2:5500},
+                    {key:'0000',value1:1131,value2:1141},
+                    {key:'0010',value1:2415,value2:2615},
+                    {key:'0020',value1:3465,value2:3265},
+                    {key:'0030',value1:2513,value2:2813},
+                    {key:'0040',value1:4015,value2:4005},
+                    {key:'0041',value1:5518,value2:5500},
+                ],
+                list2: [
+                    {key:'0000',value:1141},
+                    {key:'0010',value:2615},
+                    {key:'0020',value:3265},
+                    {key:'0030',value:2813},
+                    {key:'0040',value:4005},
+                    {key:'0041',value:5500},
+                ],
+                resultList: [],
+                total: 0,
+                limit: 10,
+                skip: 0,
+                page: 1,
+                pageSizes: [5,10,20,30,40,50],
+                selectShow: false,
+            },
+            methods: {
+                initData(){
+                    this.resultList = this.list1;
+                    this.total = this.resultList.length;
+                },
+                submit(){
+                    axios.get('/hiveSearch', {
+                            params: {
+                                keyName: this.keyName,
+                                tableName1: this.tableName1,
+                                tableName2: this.tableName2,
+                                condition: this.condition,
+                            }
+                        })
+                        .then(function (response) {
+                            console.log(response);
+                        })
+                        .catch(function (error) {
+                            console.log(error);
+                        });
+                },
+                Search(){
+                    // console.log(this.searchKey);
+                    this.resultList = [];
+                    for(let i=0,len=this.list1.length;i<len;i++){
+                        if(this.list1[i].key.indexOf(this.searchKey)>=0){
+                            this.resultList.push(this.list1[i]);
+                        }
+                    }
+                    this.total = this.resultList.length;
+                },
+                paginationInputBlur(){
+                    if(!this.page){
+                        this.page = 1;
+                        this.skip = 0;
+                    }
+                },
+                changePage(num){
+                    // console.log(Math.ceil(this.total/this.limit));
+                    if((this.page>1&&num==-1)||(this.page<Math.ceil(this.total/this.limit))&&num==1){
+                        this.page = this.page + num;
+                        this.skip = (this.page-1)*this.limit;
+                        // console.log(this.skip);
+                    }
+                },
+                selectPageSize(i){
+                    // console.log('selectPageSize');
+                    this.limit = i;
+                    this.selectShow = false;
+                },
+                inputBlur(){
+                    // console.log('inputBlur');
+                    this.selectShow = false;
+                },
+                selectMousedown(e){
+                    e.preventDefault();
+                }
+            },
+            created(){
+                this.initData();
+            }
+        })
+    </script>
+</body>
+</html>
