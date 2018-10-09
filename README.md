@@ -15,7 +15,7 @@
 ## 界面
 
 <p align="center">
-    <img src="/fuyaowork/node-service/blob/master/Screenshot/Screenshot.png?raw=true" alt="Screenshot.png">
+    <img src="http://github.com/fuyaowork/node-service/raw/master/Screenshot/Screenshot.png" alt="Screenshot.png">
 </p>
 
 ## 功能
