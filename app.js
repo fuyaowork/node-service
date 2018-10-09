@@ -7,7 +7,7 @@ var path = require('path');
 app.use(express.static(path.join(__dirname, 'dist')));
 
 
-//监听端口为3000
-var server = app.listen(3000, function () {
-    console.log('Example app listening at http://localhost:3000');
+//监听端口为8009
+var server = app.listen(8009, function () {
+    console.log('Example app listening at http://localhost:8009');
 });
