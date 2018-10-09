@@ -14,9 +14,7 @@
 
 ## 界面
 
-<p align="center">
-    <img src="http://github.com/fuyaowork/node-service/raw/master/Screenshot/Screenshot.png" alt="Screenshot.png">
-</p>
+![Image text](http://github.com/fuyaowork/node-service/raw/master/Screenshot/Screenshot.png)
 
 ## 功能
 
